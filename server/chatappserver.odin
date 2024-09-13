@@ -55,7 +55,6 @@ main :: proc() {
     pool : thread.Pool
     thread.pool_init(&pool, context.allocator, N)
     defer thread.pool_destroy(&pool)
-
     thread.pool_start(&pool)
 
     clientID : i64 = 0
@@ -73,7 +72,6 @@ handleClientTask :: proc(task: thread.Task) {
     clientTask := transmute(^ClientTask)task.data
     client := clientTask.clientID
     socket := clientTask.socket^
-    clientEndpoint := clientTask.clientEndpoint
     duration : time.Duration = 5
     net.set_option(socket, net.Socket_Option.Receive_Timeout, duration)
     for {
