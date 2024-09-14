@@ -7,14 +7,13 @@ import "core:os"
 import "core:strings"
 import "core:thread"
 import "core:time"
-import "core:bytes"
 
 ADDR :: "127.0.0.1"
 
 ClientTask :: struct #align(4) {
     socket: ^net.TCP_Socket,
     clientEndpoint: net.Endpoint,
-    clientID: i64
+    clientID: i32
 }
 
 main :: proc() {
@@ -47,8 +46,7 @@ main :: proc() {
     fmt.printfln("Starting server %s on port %v", ADDR, endpoint.port)
     socket, netErr := net.listen_tcp(endpoint)
     if netErr != nil {
-        fmt.println(netErr)
-        return
+        fmt.panicf("netErr: %s", netErr)
     }
 
     N :: 6
@@ -57,11 +55,11 @@ main :: proc() {
     defer thread.pool_destroy(&pool)
     thread.pool_start(&pool)
 
-    clientID : i64 = 0
+    clientID : i32 = 0
 
     for {
         clientSock, clientEnd, acceptErr := net.accept_tcp(socket)
-        if acceptErr != nil do fmt.panicf("%s", acceptErr)
+        if acceptErr != nil do fmt.panicf("acceptErr: %s", acceptErr)
         task := ClientTask{clientEndpoint=clientEnd, socket=&clientSock, clientID=clientID}
         clientID += 1
         thread.pool_add_task(&pool, context.allocator, handleClientTask, &task)
@@ -78,7 +76,7 @@ handleClientTask :: proc(task: thread.Task) {
         data : [1024]byte
         n, recvErr := net.recv_tcp(socket, data[:])
         if recvErr != nil {
-            fmt.println("Network Error:", recvErr)
+            fmt.printfln("Network Error: %s", recvErr)
             net.close(socket)
             return
         }
