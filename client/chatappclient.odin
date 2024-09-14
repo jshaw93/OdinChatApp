@@ -30,16 +30,17 @@ main :: proc() {
         }
     }
 
-    buff : [1024]byte
+    buff : [1024]byte // Message buffer, take in stdin and send to server/recv from server
+    
+    // Create TCP connection to server
     socket : net.TCP_Socket
     addr := net.parse_address("127.0.0.1")
-
     serverEndpoint : net.Endpoint
     serverEndpoint.address = addr
     serverEndpoint.port = 8888
     connErr : net.Network_Error
     socket, connErr = net.dial_tcp_from_endpoint(serverEndpoint)
-    if connErr != nil do fmt.panicf("Connection error")
+    if connErr != nil do fmt.panicf("Connection error: %s", connErr)
 
     for {
         // Send to server
@@ -52,13 +53,11 @@ main :: proc() {
         }
 
         // Handle Reply
-        duration : time.Duration = 5
-        net.set_option(socket, net.Socket_Option.Receive_Timeout, duration)
         _, recvErr := net.recv_tcp(socket, buff[:])
         if recvErr != nil do fmt.panicf("%s", recvErr)
         recvString := string(buff[:])
-        recvString = strings.trim(recvString, "\000")
-        recvString = recvString[:len(recvString)-2]
-        fmt.println("You sent:", recvString)
+        recvString = strings.trim(recvString, "\000") // Cya later null bytes
+        recvString = recvString[:len(recvString)-2] // Trim non-printable characters
+        fmt.println("From server:", recvString)
     }
 }
